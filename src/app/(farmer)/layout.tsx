@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -25,6 +25,14 @@ export default function FarmerLayout({
   const { lang, strings } = useLanguage();
   const { speak, stop } = useVoice();
   const [voiceOn, setVoiceOn] = useState(false);
+  const migrationRan = useRef(false);
+
+  // Auto-migrate v1 users on first load
+  useEffect(() => {
+    if (migrationRan.current) return;
+    migrationRan.current = true;
+    fetch("/api/migrate", { method: "POST" }).catch(() => {});
+  }, []);
 
   function handleVoiceToggle() {
     if (voiceOn) {
