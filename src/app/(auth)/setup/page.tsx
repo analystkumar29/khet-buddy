@@ -56,6 +56,24 @@ export default function SetupPage() {
     });
   }, [supabase, router]);
 
+  // ─── Auto-calculate tree age from plantation date ───
+  function getTreeAgeMonths(): number | undefined {
+    if (!plantationDate) return undefined;
+    const planted = new Date(plantationDate);
+    const now = new Date();
+    return Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24 * 30));
+  }
+
+  function getAutoTreeAge(): string {
+    const months = getTreeAgeMonths();
+    if (months === undefined) return treeAge;
+    if (months < 18) return "1";
+    if (months < 30) return "2";
+    if (months < 42) return "3";
+    if (months < 54) return "4";
+    return "5";
+  }
+
   // ─── Pruning date validation ───
   async function validatePruning(dateStr: string) {
     if (!dateStr || !selectedState) return;
@@ -64,9 +82,13 @@ export default function SetupPage() {
     setPruningValidated(false);
 
     try {
-      const res = await fetch(
-        `/api/farm/validate-pruning?crop=apple_ber&state=${selectedState.name}&date=${dateStr}`
-      );
+      const treeMonths = getTreeAgeMonths();
+      let url = `/api/farm/validate-pruning?crop=apple_ber&state=${selectedState.name}&date=${dateStr}`;
+      if (treeMonths !== undefined) {
+        url += `&treeAgeMonths=${treeMonths}`;
+      }
+
+      const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
 
@@ -515,20 +537,26 @@ export default function SetupPage() {
 
             <div>
               <label htmlFor="treeAge" className="mb-1 block text-lg font-semibold text-gray-800">
-                पेड़ की उम्र (साल)
+                पेड़ की उम्र (साल) {plantationDate && <span className="text-sm font-normal text-gray-500">— अपने आप भरा गया</span>}
               </label>
               <select
                 id="treeAge"
-                value={treeAge}
-                onChange={(e) => setTreeAge(e.target.value)}
-                className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-4 text-lg outline-none focus:border-khet-green"
+                value={plantationDate ? getAutoTreeAge() : treeAge}
+                onChange={(e) => !plantationDate && setTreeAge(e.target.value)}
+                disabled={!!plantationDate}
+                className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-4 text-lg outline-none focus:border-khet-green disabled:bg-gray-100 disabled:text-gray-600"
               >
-                <option value="1">1 साल (पहला साल)</option>
+                <option value="1">1 साल (पहला साल — ट्रेनिंग)</option>
                 <option value="2">2 साल (दूसरा साल)</option>
                 <option value="3">3 साल (तीसरा साल)</option>
                 <option value="4">4 साल</option>
                 <option value="5">5+ साल</option>
               </select>
+              {plantationDate && parseInt(getAutoTreeAge()) === 1 && (
+                <p className="mt-1 text-sm text-yellow-700">
+                  ⚠️ पहले साल में कड़ी छंटाई नहीं, सिर्फ ट्रेनिंग कट्स होने चाहिए
+                </p>
+              )}
             </div>
 
             {/* Plantation date */}
@@ -540,12 +568,31 @@ export default function SetupPage() {
                 id="plantationDate"
                 type="date"
                 value={plantationDate}
-                onChange={(e) => setPlantationDate(e.target.value)}
+                onChange={(e) => {
+                  setPlantationDate(e.target.value);
+                  // Auto-calculate tree age
+                  if (e.target.value) {
+                    const planted = new Date(e.target.value);
+                    const months = Math.floor((Date.now() - planted.getTime()) / (1000 * 60 * 60 * 24 * 30));
+                    if (months < 18) setTreeAge("1");
+                    else if (months < 30) setTreeAge("2");
+                    else if (months < 42) setTreeAge("3");
+                    else if (months < 54) setTreeAge("4");
+                    else setTreeAge("5");
+                  }
+                  // Re-validate pruning with updated tree age
+                  if (lastPruningDate) validatePruning(lastPruningDate);
+                }}
                 className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-4 text-lg outline-none focus:border-khet-green"
               />
               <p className="mt-1 text-sm text-gray-500">
-                जब पहली बार बाग़ लगाया — इससे पेड़ की उम्र पता चलती है
+                जब पहली बार बाग़ लगाया — इससे पेड़ की उम्र अपने आप पता चलती है
               </p>
+              {plantationDate && (
+                <p className="mt-1 text-sm font-medium text-khet-green">
+                  पेड़ की उम्र: ~{getTreeAgeMonths()} महीने ({getAutoTreeAge() === "1" ? "पहला साल — ट्रेनिंग" : `साल ${getAutoTreeAge()}`})
+                </p>
+              )}
             </div>
 
             {/* Last pruning date */}

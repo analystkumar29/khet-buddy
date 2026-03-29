@@ -7,6 +7,9 @@ export async function GET(request: Request) {
     const cropKey = searchParams.get("crop") || "apple_ber";
     const state = searchParams.get("state") || "Haryana";
     const pruningDate = searchParams.get("date");
+    const treeAgeMonths = searchParams.get("treeAgeMonths")
+      ? parseInt(searchParams.get("treeAgeMonths")!)
+      : undefined;
 
     if (!pruningDate) {
       return Response.json(
@@ -20,7 +23,8 @@ export async function GET(request: Request) {
       supabase,
       cropKey,
       state,
-      pruningDate
+      pruningDate,
+      treeAgeMonths
     );
 
     return Response.json(result);

@@ -23,7 +23,8 @@ export async function validatePruningDate(
   supabase: SupabaseClient,
   cropKey: string,
   state: string,
-  pruningDate: string
+  pruningDate: string,
+  treeAgeMonths?: number // NEW: months since plantation
 ): Promise<PruningValidation> {
   const result: PruningValidation = {
     isValid: true,
@@ -32,6 +33,42 @@ export async function validatePruningDate(
     mitigations: [],
     validWindow: null,
   };
+
+  // ─── Year 1 check (tree too young for hard pruning) ───
+  if (treeAgeMonths !== undefined && treeAgeMonths < 18) {
+    const { data: year1Warnings } = await supabase
+      .from("crop_knowledge_base")
+      .select("message_en, message_hi, severity")
+      .eq("crop_key", cropKey)
+      .eq("rule_type", "warning")
+      .eq("rule_key", "hard_pruning_year1");
+
+    const { data: year1Mitigations } = await supabase
+      .from("crop_knowledge_base")
+      .select("message_en, message_hi")
+      .eq("crop_key", cropKey)
+      .eq("rule_type", "mitigation")
+      .eq("rule_key", "hard_pruning_year1");
+
+    if (year1Warnings) {
+      result.isValid = false;
+      result.severity = "danger";
+      result.warnings = year1Warnings.map((w) => ({
+        message_en: w.message_en || "",
+        message_hi: w.message_hi || "",
+        severity: w.severity || "danger",
+      }));
+    }
+
+    if (year1Mitigations) {
+      result.mitigations = year1Mitigations.map((m) => ({
+        message_en: m.message_en || "",
+        message_hi: m.message_hi || "",
+      }));
+    }
+
+    // Still check pruning window too (Year 1 + wrong timing = double problem)
+  }
 
   // Fetch pruning window for this state
   const { data: windowRules } = await supabase
