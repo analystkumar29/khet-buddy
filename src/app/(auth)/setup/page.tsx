@@ -181,13 +181,31 @@ export default function SetupPage() {
         .maybeSingle();
 
       if (template && farm) {
-        await supabase.from("farm_crops").insert({
-          farm_id: farm.id,
-          crop_template_id: template.id,
-          planting_date: plantingDate || "2025-05-01",
-          tree_age_years: parseInt(treeAge) || 2,
-          status: "active",
-        });
+        const pDate = plantingDate || "2025-05-01";
+        const { data: farmCrop } = await supabase
+          .from("farm_crops")
+          .insert({
+            farm_id: farm.id,
+            crop_template_id: template.id,
+            planting_date: pDate,
+            tree_age_years: parseInt(treeAge) || 2,
+            status: "active",
+          })
+          .select("id")
+          .single();
+
+        // Generate personal timeline from template
+        if (farmCrop) {
+          await fetch("/api/farm/activities/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              farmCropId: farmCrop.id,
+              cropTemplateId: template.id,
+              plantingDate: pDate,
+            }),
+          });
+        }
       }
 
       router.replace("/home");
