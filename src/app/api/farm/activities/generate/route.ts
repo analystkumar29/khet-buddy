@@ -3,7 +3,7 @@ import { generateTimeline } from "@/lib/timeline/generate-timeline";
 
 export async function POST(request: Request) {
   try {
-    const { farmCropId, cropTemplateId, plantingDate } = await request.json();
+    const { farmCropId, cropTemplateId, plantingDate, state } = await request.json();
 
     if (!farmCropId || !cropTemplateId || !plantingDate) {
       return Response.json(
@@ -17,7 +17,8 @@ export async function POST(request: Request) {
       supabase,
       farmCropId,
       cropTemplateId,
-      plantingDate
+      plantingDate,
+      state
     );
 
     if (!result.success) {

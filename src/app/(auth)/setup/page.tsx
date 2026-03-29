@@ -30,6 +30,13 @@ export default function SetupPage() {
   // Step 3: Crop
   const [plantingDate, setPlantingDate] = useState("");
   const [treeAge, setTreeAge] = useState("2");
+  const [pruningWarnings, setPruningWarnings] = useState<
+    { message_hi: string; message_en: string; severity: string }[]
+  >([]);
+  const [pruningMitigations, setPruningMitigations] = useState<
+    { message_hi: string; message_en: string }[]
+  >([]);
+  const [pruningValidated, setPruningValidated] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +54,32 @@ export default function SetupPage() {
       setPhone(user.phone ?? "");
     });
   }, [supabase, router]);
+
+  // ─── Pruning date validation ───
+  async function validatePruning(dateStr: string) {
+    if (!dateStr || !selectedState) return;
+    setPruningWarnings([]);
+    setPruningMitigations([]);
+    setPruningValidated(false);
+
+    try {
+      const res = await fetch(
+        `/api/farm/validate-pruning?crop=apple_ber&state=${selectedState.name}&date=${dateStr}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.warnings?.length > 0) {
+        setPruningWarnings(data.warnings);
+      }
+      if (data.mitigations?.length > 0) {
+        setPruningMitigations(data.mitigations);
+      }
+      setPruningValidated(true);
+    } catch {
+      // Validation failed silently — allow proceeding
+    }
+  }
 
   // ─── GPS Location ───
   function handleGetLocation() {
@@ -203,6 +236,7 @@ export default function SetupPage() {
               farmCropId: farmCrop.id,
               cropTemplateId: template.id,
               plantingDate: pDate,
+              state: selectedState?.name || "Haryana",
             }),
           });
         }
@@ -493,18 +527,59 @@ export default function SetupPage() {
 
             <div>
               <label htmlFor="plantingDate" className="mb-1 block text-lg font-semibold text-gray-800">
-                आखिरी कड़ी छंटाई कब की? (मई का महीना)
+                आखिरी कड़ी छंटाई कब की?
               </label>
               <input
                 id="plantingDate"
                 type="date"
                 value={plantingDate}
-                onChange={(e) => setPlantingDate(e.target.value)}
+                onChange={(e) => {
+                  setPlantingDate(e.target.value);
+                  validatePruning(e.target.value);
+                }}
                 className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-4 text-lg outline-none focus:border-khet-green"
               />
               <p className="mt-1 text-sm text-gray-500">
                 याद नहीं? खाली छोड़ें — हम मई 2025 मानेंगे
               </p>
+
+              {/* Pruning date validation warnings */}
+              {pruningWarnings.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {pruningWarnings.map((w, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl p-3 text-sm ${
+                        w.severity === "danger"
+                          ? "bg-red-50 border border-red-200 text-red-800"
+                          : "bg-yellow-50 border border-yellow-200 text-yellow-800"
+                      }`}
+                    >
+                      <p className="font-medium">
+                        {w.severity === "danger" ? "⚠️ " : "⚡ "}
+                        {w.message_hi}
+                      </p>
+                    </div>
+                  ))}
+
+                  {/* Mitigation advice */}
+                  {pruningMitigations.length > 0 && (
+                    <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
+                      <p className="font-medium mb-1">✅ चिंता न करें, हम सही कैलेंडर बनाएंगे:</p>
+                      {pruningMitigations.map((m, i) => (
+                        <p key={i} className="mt-1">{m.message_hi}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Valid date confirmation */}
+              {pruningValidated && pruningWarnings.length === 0 && plantingDate && (
+                <div className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                  ✅ {selectedState?.name_hi || "आपके राज्य"} के लिए छंटाई की सही तारीख है
+                </div>
+              )}
             </div>
 
             {error && (

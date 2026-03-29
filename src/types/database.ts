@@ -103,6 +103,10 @@ export type CropTemplateStage = {
   disease_alerts_hi: string[];
   fertilizer_schedule: Record<string, unknown> | null;
   sort_order: number;
+  anchor_type: "pruning_relative" | "calendar_fixed" | "flowering_relative";
+  calendar_month: number | null;
+  calendar_day: number | null;
+  flowering_offset_days: number | null;
 };
 
 export type CropDisease = {
@@ -148,6 +152,7 @@ export type FarmCrop = {
   tree_age_years: number;
   status: "active" | "completed" | "abandoned";
   notes: string | null;
+  timeline_version: number;
   created_at: string;
 };
 
@@ -190,6 +195,22 @@ export type MandiPrice = {
   price_date: string;
   grade: string | null;
   source: string;
+  created_at: string;
+};
+
+export type CropKnowledgeBase = {
+  id: string;
+  crop_key: string;
+  region_key: string | null;
+  state: string | null;
+  rule_type: string;
+  rule_key: string;
+  value_date_month: number | null;
+  value_date_day: number | null;
+  value_int: number | null;
+  message_en: string | null;
+  message_hi: string | null;
+  severity: "info" | "warning" | "danger";
   created_at: string;
 };
 

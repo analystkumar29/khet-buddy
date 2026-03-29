@@ -106,7 +106,7 @@ export async function autoMigrateUser(
   // Generate timeline via API (server-side call)
   try {
     const { generateTimeline } = await import("@/lib/timeline/generate-timeline");
-    await generateTimeline(supabase, farmCrop.id, template.id, "2025-05-01");
+    await generateTimeline(supabase, farmCrop.id, template.id, "2025-05-01", profile.state || "Haryana");
   } catch (err) {
     console.error("Timeline generation during migration failed:", err);
   }
@@ -118,4 +118,54 @@ export async function autoMigrateUser(
     .eq("id", userId);
 
   return { migrated: true };
+}
+
+/**
+ * Re-generate timelines for users with old v1 model.
+ * Preserves completed/skipped/late activities, only replaces scheduled ones.
+ */
+export async function regenerateTimeline(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ regenerated: boolean }> {
+  // Find farm crops with old timeline version
+  const { data: farmCrops } = await supabase
+    .from("farm_crops")
+    .select("id, crop_template_id, planting_date, timeline_version, farm_id")
+    .eq("status", "active")
+    .lt("timeline_version", 2);
+
+  if (!farmCrops || farmCrops.length === 0) {
+    return { regenerated: false };
+  }
+
+  // Get user's state from their farm
+  for (const fc of farmCrops) {
+    const { data: farm } = await supabase
+      .from("farms")
+      .select("state, user_id")
+      .eq("id", fc.farm_id)
+      .single();
+
+    if (!farm || farm.user_id !== userId) continue;
+
+    // Delete only scheduled activities (preserve history)
+    await supabase
+      .from("farm_activities")
+      .delete()
+      .eq("farm_crop_id", fc.id)
+      .eq("status", "scheduled");
+
+    // Re-generate with three-layer model
+    const { generateTimeline } = await import("@/lib/timeline/generate-timeline");
+    await generateTimeline(
+      supabase,
+      fc.id,
+      fc.crop_template_id,
+      fc.planting_date,
+      farm.state || "Haryana"
+    );
+  }
+
+  return { regenerated: true };
 }

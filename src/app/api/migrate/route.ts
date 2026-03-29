@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { autoMigrateUser } from "@/lib/migration/auto-migrate-v2";
+import { autoMigrateUser, regenerateTimeline } from "@/lib/migration/auto-migrate-v2";
 
 export async function POST() {
   try {
@@ -14,9 +14,14 @@ export async function POST() {
     }
 
     const serviceClient = createServiceClient();
-    const result = await autoMigrateUser(serviceClient, user.id);
 
-    return Response.json(result);
+    // Auto-migrate v1 users (create farm + crop if missing)
+    const migrateResult = await autoMigrateUser(serviceClient, user.id);
+
+    // Re-generate timelines with three-layer model if old version
+    const regenResult = await regenerateTimeline(serviceClient, user.id);
+
+    return Response.json({ ...migrateResult, ...regenResult });
   } catch (error) {
     console.error("Migration error:", error);
     return Response.json(
