@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useFarmData } from "@/hooks/useFarmData";
+import { ActivityDetailModal } from "@/components/farmer/ActivityDetailModal";
 import type { FarmActivity } from "@/types/database";
 
 export default function TasksPage() {
@@ -11,6 +12,7 @@ export default function TasksPage() {
     useFarmData();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [advice, setAdvice] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<FarmActivity | null>(null);
 
   async function handleAction(
     activity: FarmActivity,
@@ -135,6 +137,7 @@ export default function TasksPage() {
                 loading={actionLoading === activity.id}
                 onComplete={() => handleAction(activity, "complete")}
                 onSkip={() => handleAction(activity, "skip")}
+                onTap={() => setSelectedActivity(activity)}
                 strings={strings}
               />
             ))}
@@ -165,6 +168,7 @@ export default function TasksPage() {
                 loading={actionLoading === activity.id}
                 onComplete={() => handleAction(activity, "complete")}
                 onSkip={() => handleAction(activity, "skip")}
+                onTap={() => setSelectedActivity(activity)}
                 strings={strings}
               />
             ))}
@@ -203,6 +207,25 @@ export default function TasksPage() {
           </div>
         </div>
       )}
+
+      {/* Activity Detail Modal */}
+      {selectedActivity && (
+        <ActivityDetailModal
+          activity={selectedActivity}
+          isOpen={!!selectedActivity}
+          onClose={() => setSelectedActivity(null)}
+          onComplete={
+            selectedActivity.status === "scheduled"
+              ? () => handleAction(selectedActivity, "complete")
+              : undefined
+          }
+          onSkip={
+            selectedActivity.status === "scheduled"
+              ? () => handleAction(selectedActivity, "skip")
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
@@ -214,6 +237,7 @@ function ActivityCard({
   loading,
   onComplete,
   onSkip,
+  onTap,
   strings,
 }: {
   activity: FarmActivity;
@@ -222,11 +246,13 @@ function ActivityCard({
   loading: boolean;
   onComplete: () => void;
   onSkip: () => void;
+  onTap?: () => void;
   strings: ReturnType<typeof import("@/hooks/useLanguage").useLanguage>["strings"];
 }) {
   return (
     <div
-      className={`rounded-xl bg-white p-4 shadow-sm border ${
+      onClick={onTap}
+      className={`rounded-xl bg-white p-4 shadow-sm border cursor-pointer active:bg-gray-50 ${
         isOverdue ? "border-red-200" : "border-gray-100"
       }`}
     >

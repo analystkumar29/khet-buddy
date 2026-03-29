@@ -128,6 +128,15 @@ export type CropDisease = {
     dosage: string;
     where_to_buy: string;
   }[];
+  causative_agent: string | null;
+  favorable_conditions_en: string | null;
+  favorable_conditions_hi: string | null;
+  economic_impact_en: string | null;
+  economic_impact_hi: string | null;
+  prevention_en: string | null;
+  prevention_hi: string | null;
+  spray_schedule: Record<string, unknown>[] | null;
+  image_indicators: string[] | null;
   created_at: string;
 };
 
