@@ -230,6 +230,15 @@ export default function MandiPage() {
         )}
       </div>
 
+      {/* Apple Ber premium note */}
+      <div className="rounded-xl bg-blue-50 border border-blue-200 p-3">
+        <p className="text-sm text-blue-800">
+          {lang === "hi"
+            ? "📌 ये भाव सामान्य बेर (Ber) के हैं। थाई एप्पल बेर को मंडी में 2-3 गुना ज़्यादा भाव मिलता है। अपनी किस्म के हिसाब से भाव लगाएं।"
+            : "📌 These are general Ber prices. Thai Apple Ber typically fetches 2-3x premium in mandis. Adjust for your variety."}
+        </p>
+      </div>
+
       {/* Info footer */}
       <p className="text-center text-xs text-gray-400">
         {lang === "hi"

@@ -9,31 +9,33 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const DATA_GOV_RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070";
+// Variety-wise dataset has historical + current data with proper commodity names
+const DATA_GOV_RESOURCE_ID = "35985678-0d79-46b4-9ed6-6f13308a1d24";
 const CACHE_HOURS = 6; // Refresh every 6 hours
 
-// Mapping from our crop_key to the commodity names used in data.gov.in
+// Mapping from our crop_key to the commodity filter value in data.gov.in
+// The variety-wise dataset uses "Ber" as the commodity filter
 const CROP_COMMODITY_MAP: Record<string, string[]> = {
-  apple_ber: ["Ber(Zizyphus/Jujube)", "Ber", "Indian Jujube", "Apple Ber"],
-  kinnow: ["Kinnow", "Mandarin", "Citrus"],
-  guava: ["Guava", "Amrud"],
-  lemon: ["Lemon", "Lime", "Lemon(Citrus)"],
+  apple_ber: ["Ber"],
+  kinnow: ["Kinnow"],
+  guava: ["Guava"],
+  lemon: ["Lemon"],
 };
 
 // States we support
 const SUPPORTED_STATES = ["Haryana", "Punjab", "Uttar Pradesh", "Rajasthan"];
 
 type DataGovRecord = {
-  state: string;
-  district: string;
-  market: string;
-  commodity: string;
-  variety: string;
-  grade: string;
-  arrival_date: string;
-  min_price: string;
-  max_price: string;
-  modal_price: string;
+  State: string;
+  District: string;
+  Market: string;
+  Commodity: string;
+  Variety: string;
+  Grade: string;
+  Arrival_Date: string;
+  Min_Price: number | string;
+  Max_Price: number | string;
+  Modal_Price: number | string;
 };
 
 type DataGovResponse = {
@@ -75,8 +77,9 @@ export async function fetchAndCachePrices(
         url.searchParams.set("api-key", apiKey);
         url.searchParams.set("format", "json");
         url.searchParams.set("limit", "100");
-        url.searchParams.set("filters[State.keyword]", stateFilter);
-        url.searchParams.set("filters[Commodity]", commodity);
+        url.searchParams.set("sort[Arrival_Date]", "desc");
+        url.searchParams.set("filters[State]", stateFilter);
+        url.searchParams.set("filters[commodity]", commodity);
 
         const res = await fetch(url.toString(), {
           next: { revalidate: CACHE_HOURS * 3600 },
@@ -89,17 +92,17 @@ export async function fetchAndCachePrices(
 
         // Transform and upsert into mandi_prices
         const rows = data.records
-          .filter((r) => r.modal_price && parseFloat(r.modal_price) > 0)
+          .filter((r) => r.Modal_Price && Number(r.Modal_Price) > 0)
           .map((r) => ({
             crop_key: cropKey,
-            mandi_name: r.market,
-            district: r.district,
-            state: r.state,
-            price_per_quintal: parseFloat(r.modal_price),
-            min_price: r.min_price ? parseFloat(r.min_price) : null,
-            max_price: r.max_price ? parseFloat(r.max_price) : null,
-            price_date: parseArrivalDate(r.arrival_date),
-            grade: r.variety || r.grade || null,
+            mandi_name: r.Market,
+            district: r.District,
+            state: r.State,
+            price_per_quintal: Number(r.Modal_Price),
+            min_price: r.Min_Price ? Number(r.Min_Price) : null,
+            max_price: r.Max_Price ? Number(r.Max_Price) : null,
+            price_date: parseArrivalDate(r.Arrival_Date),
+            grade: r.Variety || r.Grade || null,
             source: "data_gov_in",
           }));
 
