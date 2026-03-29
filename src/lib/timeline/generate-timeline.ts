@@ -141,6 +141,13 @@ export async function generateTimeline(
         break;
     }
 
+    // Skip calendar-fixed stages that fall BEFORE or AT the pruning date
+    // (they belong to the previous cycle — e.g., Rest Period in April
+    // when farmer already pruned in March)
+    if (anchorType === "calendar_fixed" && stageStartDate <= plantingDate) {
+      continue;
+    }
+
     // Create stage milestone activity
     activities.push({
       farm_crop_id: farmCropId,
@@ -180,6 +187,24 @@ export async function generateTimeline(
         status: "scheduled",
       });
     }
+  }
+
+  // Add risk advisory if pruning is outside valid window
+  if (validation && !validation.isValid && validation.mitigations.length > 0) {
+    const nextDay = new Date(plantingDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    activities.push({
+      farm_crop_id: farmCropId,
+      template_stage_id: stages[0].id, // link to pruning stage
+      activity_type: "maintenance",
+      title_hi: "⚠️ छंटाई समय से बाहर — अतिरिक्त देखभाल ज़रूरी",
+      title_en: "⚠️ Pruning Outside Window — Extra Care Needed",
+      description_hi: validation.mitigations.map((m) => m.message_hi).join("\n\n"),
+      description_en: validation.mitigations.map((m) => m.message_en).join("\n\n"),
+      scheduled_date: nextDay.toISOString().split("T")[0],
+      status: "scheduled",
+    });
   }
 
   // Insert all activities

@@ -28,7 +28,8 @@ export default function SetupPage() {
   const [manualMode, setManualMode] = useState(false);
 
   // Step 3: Crop
-  const [plantingDate, setPlantingDate] = useState("");
+  const [plantationDate, setPlantationDate] = useState(""); // when tree was first planted
+  const [lastPruningDate, setLastPruningDate] = useState(""); // when annual cycle starts
   const [treeAge, setTreeAge] = useState("2");
   const [pruningWarnings, setPruningWarnings] = useState<
     { message_hi: string; message_en: string; severity: string }[]
@@ -214,15 +215,20 @@ export default function SetupPage() {
         .maybeSingle();
 
       if (template && farm) {
-        const pDate = plantingDate || "2025-05-01";
+        // Last pruning date determines the annual cycle timeline
+        const pruneDate = lastPruningDate || "2025-05-01";
+        // Plantation date is the original planting — stored as notes
+        const plantDate = plantationDate || null;
+
         const { data: farmCrop } = await supabase
           .from("farm_crops")
           .insert({
             farm_id: farm.id,
             crop_template_id: template.id,
-            planting_date: pDate,
+            planting_date: pruneDate,
             tree_age_years: parseInt(treeAge) || 2,
             status: "active",
+            notes: plantDate ? `Plantation date: ${plantDate}` : null,
           })
           .select("id")
           .single();
@@ -235,7 +241,7 @@ export default function SetupPage() {
             body: JSON.stringify({
               farmCropId: farmCrop.id,
               cropTemplateId: template.id,
-              plantingDate: pDate,
+              plantingDate: pruneDate,
               state: selectedState?.name || "Haryana",
             }),
           });
@@ -525,22 +531,40 @@ export default function SetupPage() {
               </select>
             </div>
 
+            {/* Plantation date */}
             <div>
-              <label htmlFor="plantingDate" className="mb-1 block text-lg font-semibold text-gray-800">
+              <label htmlFor="plantationDate" className="mb-1 block text-lg font-semibold text-gray-800">
+                पेड़ कब लगाया था?
+              </label>
+              <input
+                id="plantationDate"
+                type="date"
+                value={plantationDate}
+                onChange={(e) => setPlantationDate(e.target.value)}
+                className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-4 text-lg outline-none focus:border-khet-green"
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                जब पहली बार बाग़ लगाया — इससे पेड़ की उम्र पता चलती है
+              </p>
+            </div>
+
+            {/* Last pruning date */}
+            <div>
+              <label htmlFor="lastPruningDate" className="mb-1 block text-lg font-semibold text-gray-800">
                 आखिरी कड़ी छंटाई कब की?
               </label>
               <input
-                id="plantingDate"
+                id="lastPruningDate"
                 type="date"
-                value={plantingDate}
+                value={lastPruningDate}
                 onChange={(e) => {
-                  setPlantingDate(e.target.value);
+                  setLastPruningDate(e.target.value);
                   validatePruning(e.target.value);
                 }}
                 className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-4 text-lg outline-none focus:border-khet-green"
               />
               <p className="mt-1 text-sm text-gray-500">
-                याद नहीं? खाली छोड़ें — हम मई 2025 मानेंगे
+                इससे आपका फसल कैलेंडर बनेगा। याद नहीं? खाली छोड़ें — हम मई 2025 मानेंगे
               </p>
 
               {/* Pruning date validation warnings */}
@@ -575,7 +599,7 @@ export default function SetupPage() {
               )}
 
               {/* Valid date confirmation */}
-              {pruningValidated && pruningWarnings.length === 0 && plantingDate && (
+              {pruningValidated && pruningWarnings.length === 0 && lastPruningDate && (
                 <div className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
                   ✅ {selectedState?.name_hi || "आपके राज्य"} के लिए छंटाई की सही तारीख है
                 </div>
