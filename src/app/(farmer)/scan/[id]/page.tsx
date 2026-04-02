@@ -59,6 +59,8 @@ export default function ScanResultPage({
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
     async function fetchScan() {
       const { data, error: fetchError } = await supabase
         .from("disease_scans")
@@ -75,9 +77,22 @@ export default function ScanResultPage({
 
       setScan(data as DiseaseScan);
       setLoading(false);
+
+      // Stop polling once scan is done
+      const status = (data as DiseaseScan).scan_status;
+      if (status === "completed" || status === "failed") {
+        if (intervalId) clearInterval(intervalId);
+      }
     }
 
     fetchScan();
+
+    // Poll every 3s while result is pending
+    intervalId = setInterval(fetchScan, 3000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [id, supabase]);
 
   const buildSpeechText = useCallback((s: DiseaseScan): string => {

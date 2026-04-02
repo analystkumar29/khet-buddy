@@ -61,7 +61,7 @@ export default function PaaniPage() {
           setForecast(data.forecast || []);
         }
       } catch {
-        // Silently fail
+        // Show weather unavailable instead of blank
       } finally {
         setWeatherLoading(false);
       }
@@ -145,6 +145,13 @@ export default function PaaniPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Weather unavailable */}
+      {!weatherLoading && !weather && (
+        <div className="rounded-2xl bg-gray-100 p-4 text-center text-gray-500">
+          {lang === "hi" ? "मौसम की जानकारी उपलब्ध नहीं है" : "Weather data unavailable"}
         </div>
       )}
 

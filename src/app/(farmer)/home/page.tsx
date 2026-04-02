@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useVoice } from "@/hooks/useVoice";
 import { useFarmData } from "@/hooks/useFarmData";
@@ -16,6 +17,27 @@ export default function FarmerHome() {
   const { speak } = useVoice();
   const { currentStage, upcomingActivities, latitude, longitude, loading } =
     useFarmData();
+  const [farmerName, setFarmerName] = useState<string | null>(null);
+  const supabaseRef = useRef(createClient());
+
+  // Fetch user's actual name from profile
+  useEffect(() => {
+    async function fetchName() {
+      const supabase = supabaseRef.current;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (profile?.full_name) {
+          setFarmerName(profile.full_name);
+        }
+      }
+    }
+    fetchName();
+  }, []);
 
   const [weather, setWeather] = useState<WeatherData>({
     temp: null,
@@ -45,7 +67,10 @@ export default function FarmerHome() {
           });
         }
       } catch {
-        // Weather fetch failed silently
+        setWeather({
+          temp: null,
+          description: lang === "hi" ? "मौसम उपलब्ध नहीं" : "Weather unavailable",
+        });
       }
     }
 
@@ -57,7 +82,7 @@ export default function FarmerHome() {
 
   // Greeting
   const greeting = strings.home.greeting;
-  const farmerName = lang === "hi" ? "किसान" : "Farmer";
+  const displayName = farmerName || (lang === "hi" ? "किसान" : "Farmer");
 
   // Crop stage display
   const stageLabel = loading
@@ -119,10 +144,10 @@ export default function FarmerHome() {
       {/* ─── Greeting ─── */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">
-          {greeting}, {farmerName}
+          {greeting}, {displayName}
         </h2>
         <button
-          onClick={() => speak(`${greeting} ${farmerName}`, lang)}
+          onClick={() => speak(`${greeting} ${displayName}`, lang)}
           className="touch-target flex items-center justify-center rounded-full bg-khet-green/10 p-2 text-xl active:bg-khet-green/20"
           aria-label={lang === "hi" ? "सुनें" : "Listen"}
         >
