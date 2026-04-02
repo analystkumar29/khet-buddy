@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#166534">
+  <title>खेत बडी — ऑफलाइन</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0fdf4;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    h1 {
+      font-size: 1.5rem;
+      color: #166534;
+      margin-bottom: 0.5rem;
+    }
+    .hindi { font-size: 1.25rem; color: #374151; margin-bottom: 0.5rem; }
+    .english { font-size: 1rem; color: #6b7280; margin-bottom: 2rem; }
+    .retry-btn {
+      background: #166534;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 1rem;
+      font-size: 1.125rem;
+      cursor: pointer;
+      min-height: 48px;
+      min-width: 200px;
+    }
+    .retry-btn:active { transform: scale(0.97); }
+    .tip {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #fef3c7;
+      border-radius: 1rem;
+      max-width: 360px;
+    }
+    .tip p { font-size: 0.875rem; color: #92400e; }
+  </style>
+</head>
+<body>
+  <div class="icon">📡</div>
+  <h1>खेत बडी</h1>
+  <p class="hindi">इंटरनेट नहीं है</p>
+  <p class="english">You are offline. Please check your internet connection.</p>
+  <button class="retry-btn" onclick="window.location.reload()">
+    फिर से कोशिश करें
+  </button>
+  <div class="tip">
+    <p>💡 टिप: जब इंटरनेट आएगा, तब पहले से ली गई फोटो और डाटा अपने आप अपलोड हो जाएगा।</p>
+    <p style="margin-top: 0.5rem;">Tip: Photos and data will auto-sync when you're back online.</p>
+  </div>
+</body>
+</html>

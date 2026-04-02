@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import {
   analyzeDiseaseImage,
   type DiseaseAnalysisResult,
@@ -28,7 +28,25 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verify authenticated user owns this scan
+    const authClient = await createClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const supabase = createServiceClient();
+
+    // Verify scan belongs to this user
+    const { data: scanOwnership } = await supabase
+      .from("disease_scans")
+      .select("user_id")
+      .eq("id", scanId)
+      .single();
+
+    if (!scanOwnership || scanOwnership.user_id !== user.id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Mark scan as analyzing
     const { error: updateError } = await supabase

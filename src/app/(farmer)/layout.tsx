@@ -9,7 +9,7 @@ import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 const NAV_ITEMS = [
-  { href: "/", labelHi: "होम", labelEn: "Home", icon: "🏠" },
+  { href: "/home", labelHi: "होम", labelEn: "Home", icon: "🏠" },
   { href: "/scan", labelHi: "स्कैन", labelEn: "Scan", icon: "📷" },
   { href: "/tasks", labelHi: "काम", labelEn: "Tasks", icon: "📋" },
   { href: "/mandi", labelHi: "मंडी", labelEn: "Mandi", icon: "💰" },
@@ -45,7 +45,7 @@ export default function FarmerLayout({
   }
 
   function isActive(href: string): boolean {
-    if (href === "/") return pathname === "/";
+    if (href === "/home") return pathname === "/" || pathname === "/home";
     return pathname.startsWith(href);
   }
 

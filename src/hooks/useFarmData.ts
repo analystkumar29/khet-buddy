@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   Farm,
   FarmCrop,
@@ -34,7 +34,8 @@ export function useFarmData(): FarmData {
   const [error, setError] = useState<string | null>(null);
   const [fetchCount, setFetchCount] = useState(0);
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     async function fetchData() {
@@ -139,7 +140,8 @@ export function useFarmData(): FarmData {
     }
 
     fetchData();
-  }, [supabase, fetchCount]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchCount]);
 
   return {
     farm,
