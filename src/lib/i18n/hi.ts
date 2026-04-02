@@ -130,6 +130,13 @@ export const hi = {
     prices_falling: "भाव गिर रहे हैं — जल्दी बेचें या रुकें",
     no_prices: "आज कोई भाव उपलब्ध नहीं",
     source: "स्रोत: data.gov.in (AGMARKNET)",
+    set_alert: "मूल्य अलर्ट सेट करें",
+    alert_price: "लक्ष्य मूल्य (₹/क्विंटल)",
+    alert_active: "सक्रिय अलर्ट",
+    alert_saved: "अलर्ट सेव हो गया!",
+    alert_deleted: "अलर्ट हटा दिया",
+    no_alerts: "कोई अलर्ट नहीं",
+    alert_triggered: "भाव आपके लक्ष्य से ऊपर है!",
   },
   setup: {
     step1_title: "अपनी जानकारी भरें",

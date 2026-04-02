@@ -12,6 +12,7 @@ import type {
 export type FarmData = {
   farm: Farm | null;
   farmCrop: FarmCrop | null;
+  cropKey: string | null;
   currentStage: CropTemplateStage | null;
   upcomingActivities: FarmActivity[];
   pastActivities: FarmActivity[];
@@ -26,6 +27,7 @@ export type FarmData = {
 export function useFarmData(): FarmData {
   const [farm, setFarm] = useState<Farm | null>(null);
   const [farmCrop, setFarmCrop] = useState<FarmCrop | null>(null);
+  const [cropKey, setCropKey] = useState<string | null>(null);
   const [currentStage, setCurrentStage] = useState<CropTemplateStage | null>(null);
   const [upcomingActivities, setUpcomingActivities] = useState<FarmActivity[]>([]);
   const [pastActivities, setPastActivities] = useState<FarmActivity[]>([]);
@@ -82,6 +84,18 @@ export function useFarmData(): FarmData {
         if (!activeCrop) {
           setLoading(false);
           return;
+        }
+
+        // Resolve crop_key from template
+        if (activeCrop.crop_template_id) {
+          const { data: template } = await supabase
+            .from("crop_templates")
+            .select("crop_key")
+            .eq("id", activeCrop.crop_template_id)
+            .single();
+          setCropKey(template?.crop_key || "apple_ber");
+        } else {
+          setCropKey("apple_ber");
         }
 
         // Get all farm activities
@@ -146,6 +160,7 @@ export function useFarmData(): FarmData {
   return {
     farm,
     farmCrop,
+    cropKey,
     currentStage,
     upcomingActivities,
     pastActivities,

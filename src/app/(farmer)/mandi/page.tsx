@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useFarmData } from "@/hooks/useFarmData";
+import type { PriceAlert } from "@/types/database";
 
 type MandiEntry = {
   mandi: string;
@@ -34,17 +35,64 @@ const TREND_CONFIG = {
 };
 
 export default function MandiPage() {
-  const { lang } = useLanguage();
-  const { farm } = useFarmData();
+  const { lang, strings } = useLanguage();
+  const { farm, cropKey } = useFarmData();
 
   const [data, setData] = useState<MandiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Price alerts state
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [showAlertForm, setShowAlertForm] = useState(false);
+  const [alertPrice, setAlertPrice] = useState("");
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/alerts");
+      if (res.ok) {
+        const json = await res.json();
+        setAlerts(json.alerts || []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
+
+  async function saveAlert() {
+    if (!alertPrice || Number(alertPrice) <= 0) return;
+    setAlertSaving(true);
+    try {
+      const res = await fetch("/api/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          crop_key: cropKey || "apple_ber",
+          target_price: Number(alertPrice),
+        }),
+      });
+      if (res.ok) {
+        setAlertMessage(strings.mandi.alert_saved);
+        setAlertPrice("");
+        setShowAlertForm(false);
+        fetchAlerts();
+        setTimeout(() => setAlertMessage(null), 3000);
+      }
+    } catch { /* ignore */ }
+    setAlertSaving(false);
+  }
+
+  async function deleteAlert(id: string) {
+    await fetch(`/api/alerts?id=${id}`, { method: "DELETE" });
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  }
+
   useEffect(() => {
     async function fetchPrices() {
       try {
-        const params = new URLSearchParams({ crop: "apple_ber" });
+        const params = new URLSearchParams({ crop: cropKey || "apple_ber" });
         if (farm?.state) params.set("state", farm.state);
 
         const res = await fetch(`/api/mandi/prices?${params}`);
@@ -64,7 +112,7 @@ export default function MandiPage() {
     }
 
     fetchPrices();
-  }, [farm?.state, lang]);
+  }, [farm?.state, cropKey, lang]);
 
   if (loading) {
     return (
@@ -237,6 +285,101 @@ export default function MandiPage() {
             ? "📌 ये भाव सामान्य बेर (Ber) के हैं। थाई एप्पल बेर को मंडी में 2-3 गुना ज़्यादा भाव मिलता है। अपनी किस्म के हिसाब से भाव लगाएं।"
             : "📌 These are general Ber prices. Thai Apple Ber typically fetches 2-3x premium in mandis. Adjust for your variety."}
         </p>
+      </div>
+
+      {/* Alert triggered indicator */}
+      {alerts.length > 0 && data?.summary?.bestMandi && alerts.some((a) => data.summary.bestMandi!.price >= a.target_price) && (
+        <div className="rounded-xl bg-green-100 border-2 border-green-400 p-4 text-center">
+          <p className="text-lg font-bold text-green-800">
+            🔔 {strings.mandi.alert_triggered}
+          </p>
+        </div>
+      )}
+
+      {/* Success message */}
+      {alertMessage && (
+        <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-center text-green-700 font-medium">
+          {alertMessage}
+        </div>
+      )}
+
+      {/* Price Alerts Section */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-lg">
+            {strings.mandi.alert_active}
+          </h2>
+          <button
+            onClick={() => setShowAlertForm(!showAlertForm)}
+            className="min-h-[40px] px-4 bg-khet-green text-white text-sm font-semibold rounded-xl active:bg-green-800"
+          >
+            {showAlertForm ? strings.common.cancel : strings.mandi.set_alert}
+          </button>
+        </div>
+
+        {/* Alert creation form */}
+        {showAlertForm && (
+          <div className="mb-4 p-3 bg-green-50 rounded-xl border border-green-200">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {strings.mandi.alert_price}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={alertPrice}
+                onChange={(e) => setAlertPrice(e.target.value)}
+                placeholder="₹ 3000"
+                className="flex-1 min-h-[44px] px-3 rounded-lg border border-gray-300 text-lg"
+                min="1"
+              />
+              <button
+                onClick={saveAlert}
+                disabled={alertSaving || !alertPrice}
+                className="min-h-[44px] px-5 bg-khet-green text-white font-semibold rounded-lg disabled:opacity-50"
+              >
+                {alertSaving ? "..." : strings.common.save}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Active alerts list */}
+        {alerts.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-2">
+            {strings.mandi.no_alerts}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {alerts.map((alert) => {
+              const triggered = data?.summary?.bestMandi && data.summary.bestMandi.price >= alert.target_price;
+              return (
+                <div
+                  key={alert.id}
+                  className={`flex items-center justify-between rounded-xl border p-3 ${
+                    triggered ? "border-green-300 bg-green-50" : "border-gray-100 bg-gray-50"
+                  }`}
+                >
+                  <div>
+                    <p className={`font-bold ${triggered ? "text-green-700" : "text-gray-800"}`}>
+                      ₹{alert.target_price.toLocaleString("en-IN")}/{lang === "hi" ? "क्विंटल" : "quintal"}
+                    </p>
+                    {triggered && (
+                      <p className="text-xs text-green-600 font-medium">
+                        {lang === "hi" ? "भाव लक्ष्य से ऊपर!" : "Price above target!"}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => deleteAlert(alert.id)}
+                    className="min-h-[36px] px-3 text-red-500 text-sm font-medium rounded-lg hover:bg-red-50 active:bg-red-100"
+                  >
+                    {lang === "hi" ? "हटाएं" : "Delete"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Info footer */}

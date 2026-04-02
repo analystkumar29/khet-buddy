@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useFarmData } from "@/hooks/useFarmData";
 import type { CropDisease } from "@/types/database";
 
 const RISK_COLORS: Record<string, string> = {
@@ -14,23 +15,26 @@ const RISK_COLORS: Record<string, string> = {
 
 export default function DiseasesPage() {
   const { lang } = useLanguage();
+  const { cropKey } = useFarmData();
   const [diseases, setDiseases] = useState<CropDisease[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const supabase = createClient();
+  const activeCropKey = cropKey || "apple_ber";
 
   useEffect(() => {
     supabase
       .from("crop_diseases")
       .select("*")
-      .eq("crop_key", "apple_ber")
+      .eq("crop_key", activeCropKey)
       .order("name_en")
       .then(({ data }) => {
         setDiseases((data || []) as CropDisease[]);
         setLoading(false);
       });
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCropKey]);
 
   if (loading) {
     return (
@@ -87,8 +91,8 @@ export default function DiseasesPage() {
       </h1>
       <p className="text-sm text-gray-500">
         {lang === "hi"
-          ? `एप्पल बेर — ${diseases.length} बीमारियां/कीट/विकार`
-          : `Apple Ber — ${diseases.length} diseases/pests/disorders`}
+          ? `${diseases.length} बीमारियां/कीट/विकार`
+          : `${diseases.length} diseases/pests/disorders`}
       </p>
 
       {renderGroup("Fungal Diseases", "फफूंद रोग", "🍄", fungal)}

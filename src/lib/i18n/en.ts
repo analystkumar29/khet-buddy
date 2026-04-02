@@ -130,6 +130,13 @@ export const en = {
     prices_falling: "Prices are falling — sell soon or hold",
     no_prices: "No prices available today",
     source: "Source: data.gov.in (AGMARKNET)",
+    set_alert: "Set Price Alert",
+    alert_price: "Target Price (₹/quintal)",
+    alert_active: "Active Alerts",
+    alert_saved: "Alert saved!",
+    alert_deleted: "Alert deleted",
+    no_alerts: "No price alerts set",
+    alert_triggered: "Price crossed your target!",
   },
   setup: {
     step1_title: "Your Information",
