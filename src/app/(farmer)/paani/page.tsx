@@ -312,9 +312,17 @@ export default function PaaniPage() {
 
       {/* ─── Soil Health Section ─── */}
       <div className="border-t-2 border-khet-green/20 pt-4">
-        <h2 className="text-2xl font-bold text-khet-green mb-3">
-          {strings.soil.title}
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-2xl font-bold text-khet-green">
+            {strings.soil.title}
+          </h2>
+          <a
+            href="/sensors"
+            className="text-sm font-medium text-khet-green underline"
+          >
+            {strings.sensors.manage}
+          </a>
+        </div>
 
         {/* Save confirmation */}
         {saveMsg && (
