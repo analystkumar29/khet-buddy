@@ -223,6 +223,51 @@ export type CropKnowledgeBase = {
   created_at: string;
 };
 
+// ============================================
+// Soil monitoring types
+// ============================================
+
+export type SoilSensor = {
+  id: string;
+  farm_id: string;
+  device_id: string;
+  sensor_type: "diy_esp32" | "soilsens" | "manual";
+  label: string | null;
+  is_active: boolean;
+  last_seen_at: string | null;
+  created_at: string;
+};
+
+export type SensorReading = {
+  id: string;
+  sensor_id: string | null;
+  farm_id: string;
+  source: "sensor" | "manual" | "soil_health_card";
+  moisture_pct: number | null;
+  nitrogen_ppm: number | null;
+  phosphorus_ppm: number | null;
+  potassium_ppm: number | null;
+  ph: number | null;
+  temperature_c: number | null;
+  humidity_pct: number | null;
+  reading_at: string;
+  created_at: string;
+};
+
+export type SoilThreshold = {
+  id: string;
+  crop_key: string;
+  stage_key: string | null;
+  parameter: "moisture" | "nitrogen" | "phosphorus" | "potassium" | "ph" | "temperature";
+  min_value: number;
+  max_value: number;
+  unit: string;
+  advice_low_en: string | null;
+  advice_low_hi: string | null;
+  advice_high_en: string | null;
+  advice_high_hi: string | null;
+};
+
 export type PriceAlert = {
   id: string;
   user_id: string;
